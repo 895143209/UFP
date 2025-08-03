@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: ufp
+Version: 0.1
+Summary: User Function Package for OpenSeesPy
+Author: YourName
+Requires-Python: >=3.8
