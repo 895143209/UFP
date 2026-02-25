@@ -8,5 +8,7 @@ from .user_function import ( print_unit_table,
                              plot_model,
                              plt_layershell_section,
                              create_layershell,
-                             wall_mesh
+                             wall_mesh,
+                             add_vertical_rebars
 )
+
