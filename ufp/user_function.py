@@ -80,41 +80,43 @@ def print_unit_table():
 def GeneratePeaks(Dmax, DincrStatic=0.01, CycleType='Full', Fact=1.0):
     """
     根据峰值位移、增量和循环类型生成位移步列表
+    并在当前目录下生成 IDstep.txt 文件
     """
     iDstep = [0.0]
     Disp = 0.0
     Dmax_scaled = Dmax * Fact
 
     if Dmax_scaled == 0:
-        return [0.0]
+        iDstep = [0.0]
+    else:
+        dx = DincrStatic if Dmax_scaled > 0 else -DincrStatic
+        NstepsPeak = int(abs(Dmax_scaled) / DincrStatic)
+        if NstepsPeak == 0: NstepsPeak = 1  # 至少走一步
 
-    dx = DincrStatic if Dmax_scaled > 0 else -DincrStatic
-    NstepsPeak = int(abs(Dmax_scaled) / DincrStatic)
-    if NstepsPeak == 0: NstepsPeak = 1  # 至少走一步
-
-    # 0 -> +peak
-    for _ in range(NstepsPeak):
-        Disp += dx
-        iDstep.append(Disp)
-
-    # +peak -> 0
-    if CycleType in ['Full', 'HalfCycle']:
-        for _ in range(NstepsPeak):
-            Disp -= dx
-            iDstep.append(Disp)
-
-    # 0 -> -peak -> 0
-    if CycleType == 'Full':
-        # 0 -> -peak
-        for _ in range(NstepsPeak):
-            Disp -= dx
-            iDstep.append(Disp)
-        # -peak -> 0
+        # 0 -> +peak
         for _ in range(NstepsPeak):
             Disp += dx
             iDstep.append(Disp)
 
+        # +peak -> 0
+        if CycleType in ['Full', 'HalfCycle']:
+            for _ in range(NstepsPeak):
+                Disp -= dx
+                iDstep.append(Disp)
+
+        # 0 -> -peak -> 0
+        if CycleType == 'Full':
+            # 0 -> -peak
+            for _ in range(NstepsPeak):
+                Disp -= dx
+                iDstep.append(Disp)
+            # -peak -> 0
+            for _ in range(NstepsPeak):
+                Disp += dx
+                iDstep.append(Disp)
+
     return iDstep
+
 
 
 def GetPeakStep(iDmax1, all_steps):
@@ -267,6 +269,28 @@ def wall_mesh(
     "elapsed_time": time.time() - start_time
     }
 
+def add_vertical_rebars(node_grid, cols, area, mat_tag, start_ele_tag=None):
+    """
+    根据 wall_mesh 返回的 node_grid 自动生成纵向 truss 钢筋
+    cols: 纵筋所在的列索引（list[int]）
+    area: 钢筋截面面积 (m²)
+    mat_tag: 钢筋材料号
+    start_ele_tag: 起始单元编号（默认接着已有的最大编号）
+    """
+    if start_ele_tag is None:
+        existing_eles = getEleTags()
+        start_ele_tag = max(existing_eles) if existing_eles else 0
+
+    ele_tag = start_ele_tag + 1
+    for col in cols:
+        for row in range(len(node_grid) - 1):
+            n1 = node_grid[row][col]
+            n2 = node_grid[row + 1][col]
+            element("truss", ele_tag, n1, n2, area, mat_tag)
+            ele_tag += 1
+
+    print(f"已生成纵向钢筋 truss 单元 {ele_tag - start_ele_tag - 1} 根")
+    return ele_tag - 1
 
 # ==================================
 # ========== 可视化函数 ============
@@ -311,7 +335,6 @@ def plot_model(show_node=True, show_ele=True,
                              point_color="blue")
 
     fig.show()
-
 
 
 
