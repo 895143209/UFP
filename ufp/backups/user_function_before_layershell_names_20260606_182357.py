@@ -2248,8 +2248,7 @@ def plt_layershell_section(section_data):
     ax.invert_yaxis()
     ax.set_xlabel("Display Width (mm)")
     ax.set_ylabel("Wall Thickness (mm)")
-    section_name = section_data.get("name") or f"LayeredShell Section tag={section_data['tag']}"
-    ax.set_title(f"{section_name} (tag={section_data['tag']})")
+    ax.set_title(f"LayeredShell Section tag={section_data['tag']}")
     ax.grid(True, linestyle='--', alpha=0.3)
 
     # 创建图例
@@ -4565,7 +4564,7 @@ def _apply_retrofit_table_to_generated_files(model_root, selected_table=None, sh
     retrofit_section_code.append("\n        # -------------------- Retrofit generated sections --------------------")
     retrofit_section_code.append("        def _create_retrofit_column_section(sec_tag, b, h, cover, retrofit_t, retrofit_cover_t, mesh, cover_mat, ring_mat, core_mat, rebar_mat, bar_count, bar_dia, stirrup_dia, sec_name=None, GJ=1e13, show=False):")
     retrofit_section_code.append("            return ufp.build_rect_retrofit_section(sec_tag=sec_tag, b=b, h=h, sec_name=(sec_name or f'Retrofit_Rect_{sec_tag}'), retrofit_t=retrofit_t, retrofit_cover_t=retrofit_cover_t, perimeter_bars=(bar_count, bar_dia), cover=cover, stirrup_dia=stirrup_dia, mesh_size_cover=mesh, mesh_size_ring=mesh, mesh_size_core=mesh, GJ=GJ, cover_mat_tag=cover_mat, ring_mat_tag=ring_mat, core_mat_tag=core_mat, rebar_mat_tag=rebar_mat, display_results=False, show=show, register=True)")
-    retrofit_section_code.append("        def _create_retrofit_wall_layered_section(tag, name, concrete_layers, h_bar_dia, h_bar_spacing, v_bar_dia, v_bar_spacing, concrete_names=None):")
+    retrofit_section_code.append("        def _create_retrofit_wall_layered_section(tag, name, concrete_layers, h_bar_dia, h_bar_spacing, v_bar_dia, v_bar_spacing):")
     retrofit_section_code.append("            h_t = ufp.rebar_equivalent_layer_thickness(h_bar_dia, h_bar_spacing) if h_bar_dia and h_bar_spacing else 0.0")
     retrofit_section_code.append("            v_t = ufp.rebar_equivalent_layer_thickness(v_bar_dia, v_bar_spacing) if v_bar_dia and v_bar_spacing else 0.0")
     retrofit_section_code.append("            layers = [{'matTag': concrete_layers[0][1], 'thickness': concrete_layers[0][0]}]")
@@ -4575,9 +4574,8 @@ def _apply_retrofit_table_to_generated_files(model_root, selected_table=None, sh
     retrofit_section_code.append("            if v_t: layers.append({'matTag': TagreinfV, 'thickness': v_t, 'rebar': True})")
     retrofit_section_code.append("            if h_t: layers.append({'matTag': TagreinfH, 'thickness': h_t, 'rebar': True})")
     retrofit_section_code.append("            layers.append({'matTag': concrete_layers[-1][1], 'thickness': concrete_layers[-1][0]})")
-    retrofit_section_code.append("            concrete_names = list(concrete_names or [])")
-    retrofit_section_code.append("            props = {TagreinfH: {'name': 'HRB400 Horizontal PlateRebar', 'color': '#d62728'}, TagreinfV: {'name': 'HRB400 Vertical PlateRebar', 'color': '#3327d6'}}")
-    retrofit_section_code.append("            for i, (_, mat) in enumerate(concrete_layers): props[mat] = {'name': (concrete_names[i] if i < len(concrete_names) else str(mat)), 'color': '#cccccc'}")
+    retrofit_section_code.append("            props = {TagreinfH: {'name': 'Horizontal PlateRebar', 'color': '#d62728'}, TagreinfV: {'name': 'Vertical PlateRebar', 'color': '#3327d6'}}")
+    retrofit_section_code.append("            for _, mat in concrete_layers: props[mat] = {'name': str(mat), 'color': '#cccccc'}")
     retrofit_section_code.append("            return ufp.create_layershell({'tag': tag, 'name': name, 'thickness': sum(t for t, _ in concrete_layers), 'material_properties': props, 'layers': layers}, show=TABLE_SECTION_SHOW)")
 
     col_int_map = {}
@@ -4634,8 +4632,7 @@ def _apply_retrofit_table_to_generated_files(model_root, selected_table=None, sh
         thickness_seq, mat_seq = key
         pairs = ", ".join(f"({float(t):g}, {m})" for t, m in zip(thickness_seq, mat_seq))
         retrofit_section_code.append(f"        {section_name}_SecTag = {tag}")
-        concrete_names = ", ".join(repr(_mat_label(m)) for m in mat_seq)
-        retrofit_section_code.append(f"        _create_retrofit_wall_layered_section({section_name}_SecTag, '{section_name}', [{pairs}], h_bar_dia=8.0, h_bar_spacing=200.0, v_bar_dia=10.0, v_bar_spacing=200.0, concrete_names=[{concrete_names}])")
+        retrofit_section_code.append(f"        _create_retrofit_wall_layered_section({section_name}_SecTag, '{section_name}', [{pairs}], h_bar_dia=8.0, h_bar_spacing=200.0, v_bar_dia=10.0, v_bar_spacing=200.0)")
 
     retrofit_section_code.append(f"        RETROFIT_COLUMN_INTEGRATION_BY_COMPONENT = {repr(col_int_map)}")
     retrofit_section_code.append(f"        RETROFIT_COLUMN_RULES_BY_COMPONENT = {repr({r['name']: {'z_start': r['z_start'], 'z_end': r['z_end'], 'segment_coords': r['segment_coords']} for r in column_rules})}")
