@@ -1,0 +1,18 @@
+# Python caches and build products
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Local test/tool caches
+.pytest_cache/
+.coverage
+
+# Local UFP archives; these are not importable package source
+ufp/backups/
+ufp/*.rar
+
+# Generated local analysis and maintenance output
+.opstool.output/
+reorg_backups/
